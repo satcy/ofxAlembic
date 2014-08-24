@@ -483,9 +483,6 @@ void Camera::get(OCameraSchema &schema, OXformSchema &xformschema) const
         }
     };
     
-    
-    
-    ofLogError("") << transform << endl;
     Alembic::AbcGeom::XformSample xformsample;
     xformsample.setTranslation(toAbc(transform.getTranslation()));
     ofVec3f euler = EulerConverter::toEulerXYZ(transform);
