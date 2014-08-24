@@ -120,14 +120,14 @@ ofxAlembic::ICamera::ICamera(Alembic::AbcGeom::ICamera object) : ofxAlembic::IGe
 	
 	if (m_camera.getSchema().isConstant())
 	{
-		camera.set(m_camera.getSchema(), m_minTime);
+		camera.set(m_camera.getSchema(), m_minTime, Imath::M44f()); // TODO
 	}
 }
 
 void ofxAlembic::ICamera::updateWithTimeInternal(double time, Imath::M44f& xform)
 {
 	if (m_camera.getSchema().isConstant()) return;
-	camera.set(m_camera.getSchema(), time);
+	camera.set(m_camera.getSchema(), time, xform);
 }
 
 #pragma mark - Reader

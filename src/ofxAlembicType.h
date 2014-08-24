@@ -113,12 +113,14 @@ public:
 	
 	void setViewport(int width, int height) { this->width = width, this->height = height; }
 	
-	void updateParams(ofCamera &camera);
+	void updateParams(ofCamera &camera, ofMatrix4x4 xform);
 	
 	void draw();
 	
 protected:
 	int width, height;
+    Alembic::AbcGeom::CameraSample sample;
+    
 	ofMatrix4x4 modelview;
 	ofMatrix4x4 transform;
 };

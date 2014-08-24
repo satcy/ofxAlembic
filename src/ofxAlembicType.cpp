@@ -512,7 +512,7 @@ void Camera::set(ICameraSchema &schema, float time, const Imath::M44f& transform
 		modelview.getPtr()[i] = transform.getValue()[i];
 }
 
-void Camera::updateParams(ofCamera &camera)
+void Camera::updateParams(ofCamera &camera, ofMatrix4x4 xform)
 {
 	float w, h;
 	if (width == 0 || height == 0)
