@@ -5,9 +5,20 @@ using namespace Alembic::AbcGeom;
 
 #pragma mark - XForm
 
+void XForm::get(Alembic::AbcGeom::OXformSchema &schema) const
+{
+}
+
+void XForm::set(Alembic::AbcGeom::IXformSchema &schema, float time, const Imath::M44f& transform)
+{
+}
+
 void XForm::draw()
 {
+	ofPushMatrix();
+	ofMultMatrix(global_matrix);
 	ofDrawAxis(10);
+	ofPopMatrix();
 }
 
 #pragma mark - Points
@@ -415,18 +426,93 @@ void Curves::draw()
 
 #pragma mark - Camera
 
-void Camera::get(OCameraSchema &schema) const
+void Camera::get(OCameraSchema &schema, OXformSchema &xformschema) const
 {
-	ofLogError("ofxAlembic::Camera") << "not implemented";
+	//ofLogError("ofxAlembic::Camera") << "not implemented";
+    
+    struct EulerConverter {
+        static ofVec3f toEulerXYZ(const ofMatrix4x4 &m)
+        {
+            ofVec3f v;
+            
+            float &thetaX = v.x;
+            float &thetaY = v.y;
+            float &thetaZ = v.z;
+            
+            const float &r00 = m(0, 0);
+            const float &r01 = m(1, 0);
+            const float &r02 = m(2, 0);
+            
+            const float &r10 = m(0, 1);
+            const float &r11 = m(1, 1);
+            const float &r12 = m(2, 1);
+            
+            const float &r20 = m(0, 2);
+            const float &r21 = m(1, 2);
+            const float &r22 = m(2, 2);
+            
+            if (r02 < +1)
+            {
+                if (r02 > -1)
+                {
+                    thetaY = asinf(r02);
+                    thetaX = atan2f(-r12, r22);
+                    thetaZ = atan2f(-r01, r00);
+                }
+                else     // r02 = -1
+                {
+                    // Not a unique solution: thetaZ - thetaX = atan2f(r10,r11)
+                    thetaY = -PI / 2;
+                    thetaX = -atan2f(r10, r11);
+                    thetaZ = 0;
+                }
+            }
+            else // r02 = +1
+            {
+                // Not a unique solution: thetaZ + thetaX = atan2f(r10,r11)
+                thetaY = +PI / 2;
+                thetaX = atan2f(r10, r11);
+                thetaZ = 0;
+            }
+            
+            thetaX = ofRadToDeg(thetaX);
+            thetaY = ofRadToDeg(thetaY);
+            thetaZ = ofRadToDeg(thetaZ);
+            
+            return v;
+        }
+    };
+    
+    
+    
+    ofLogError("") << transform << endl;
+    Alembic::AbcGeom::XformSample xformsample;
+    xformsample.setTranslation(toAbc(transform.getTranslation()));
+    ofVec3f euler = EulerConverter::toEulerXYZ(transform);
+    xformsample.setXRotation(euler.x);
+    xformsample.setYRotation(euler.y);
+    xformsample.setZRotation(euler.z);
+    xformschema.set(xformsample);
+    
+    Alembic::AbcGeom::CameraSample sample;
+    float fovDeg = camera.getFov();
+    double focalCm = sample.getVerticalAperture() * 0.5 / tan(ofDegToRad(fovDeg) * 0.5);
+    double focalMm = focalCm * 10.0;
+    sample.setFocalLength(focalMm);
+    schema.set(sample);
 }
 
-void Camera::set(ICameraSchema &schema, float time)
+void Camera::set(ICameraSchema &schema, float time, const Imath::M44f& transform)
 {
 	ISampleSelector ss(time, ISampleSelector::kNearIndex);
+    Alembic::AbcGeom::CameraSample sample;
 	schema.get(sample, ss);
+	
+	for (int i = 0; i < 16; i++)
+		modelview.getPtr()[i] = transform.getValue()[i];
 }
 
-void Camera::updateParams(ofCamera &camera, ofMatrix4x4 xform)
+void Camera::updateParams(ofCamera &camera)
 {
 	float w, h;
 	if (width == 0 || height == 0)

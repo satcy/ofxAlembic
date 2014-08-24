@@ -31,6 +31,14 @@ enum Type
 class ofxAlembic::XForm
 {
 public:
+	ofMatrix4x4 local_matrix;
+	ofMatrix4x4 global_matrix;
+	
+	XForm() {}
+	
+	void get(Alembic::AbcGeom::OXformSchema &schema) const;
+	void set(Alembic::AbcGeom::IXformSchema &schema, float time, const Imath::M44f& transform);
+
 	void draw();
 };
 
@@ -93,21 +101,24 @@ public:
 class ofxAlembic::Camera
 {
 public:
+    ofCamera camera;
 
 	Camera() : width(0), height(0) {}
-	Camera(const ofCamera& camera) : width(0), height(0) {}
+	Camera(const ofCamera& camera) : width(0), height(0), camera(camera) {
+        transform = camera.getGlobalTransformMatrix();
+    }
 	
-	void get(Alembic::AbcGeom::OCameraSchema &schema) const;
-	void set(Alembic::AbcGeom::ICameraSchema &schema, float time);
+	void get(Alembic::AbcGeom::OCameraSchema &schema, Alembic::AbcGeom::OXformSchema &xformschema) const;
+	void set(Alembic::AbcGeom::ICameraSchema &schema, float time, const Imath::M44f& transform);
 	
 	void setViewport(int width, int height) { this->width = width, this->height = height; }
 	
-	void updateParams(ofCamera &camera, ofMatrix4x4 xform);
+	void updateParams(ofCamera &camera);
 	
 	void draw();
 	
 protected:
-	
 	int width, height;
-	Alembic::AbcGeom::CameraSample sample;
+	ofMatrix4x4 modelview;
+	ofMatrix4x4 transform;
 };

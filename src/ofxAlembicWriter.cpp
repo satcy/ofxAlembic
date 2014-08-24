@@ -69,6 +69,20 @@ void Writer::addCurves(const string& path, const Curves& curves)
 	curves.get(schema);
 }
 
+void Writer::addCamera(const string& path, const Camera& camera)
+{
+    string child("camera_self");
+    OXform &objectXform = getObject<OXform>(path);
+    OXform::schema_type &schemaXform = objectXform.getSchema();
+    typedef OCamera Type;
+    typedef Type::schema_type Schema;
+    
+    Type &object = getObject<Type>(child, &path);
+    Schema &schema = object.getSchema();
+    
+    camera.get(schema, schemaXform);
+}
+
 // time
 
 void Writer::setTime(float time)
