@@ -492,6 +492,9 @@ void Camera::get(OCameraSchema &schema, OXformSchema &xformschema) const
     xformschema.set(xformsample);
     
     Alembic::AbcGeom::CameraSample sample;
+    const double horizontalAperture = 3.6;
+    sample.setHorizontalAperture(horizontalAperture);
+    sample.setVerticalAperture(horizontalAperture * ofGetViewportHeight() / ofGetViewportWidth());
     float fovDeg = camera.getFov();
     double focalCm = sample.getVerticalAperture() * 0.5 / tan(ofDegToRad(fovDeg) * 0.5);
     double focalMm = focalCm * 10.0;
