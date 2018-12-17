@@ -19,7 +19,7 @@ public:
 
 	~Writer() { close(); }
 
-	bool open(const string& path, float fps = 30, Alembic::AbcCoreFactory::IFactory::CoreType type = Alembic::AbcCoreFactory::IFactory::kOgawa);
+    bool open(const string& path, float fps = 30, Alembic::AbcCoreFactory::IFactory::CoreType type = Alembic::AbcCoreFactory::IFactory::kHDF5);
 	void close();
 
 	void addPoints(const string& path, const Points& points);

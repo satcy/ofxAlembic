@@ -125,13 +125,9 @@ bool ofxAlembic::Reader::open(const string& path)
 		return false;
 	}
 
-	m_archive = IArchive(Alembic::AbcCoreOgawa::ReadArchive(), ofToDataPath(path),
-		Alembic::Abc::ErrorHandler::kQuietNoopPolicy);
-	if (!m_archive.valid()) {
-		m_archive = IArchive(Alembic::AbcCoreOgawa::ReadArchive(), ofToDataPath(path),
-			Alembic::Abc::ErrorHandler::kNoisyNoopPolicy);
-		if (!m_archive.valid()) return false;
-	}
+    m_archive = IArchive(Alembic::AbcCoreOgawa::ReadArchive(), ofToDataPath(path),
+                            Alembic::Abc::ErrorHandler::kNoisyNoopPolicy);
+    if (!m_archive.valid()) return false;
 
 	m_root = ofPtr<IGeom>(new IGeom(m_archive.getTop()));
 
@@ -249,7 +245,7 @@ bool ofxAlembic::Reader::get(const string& path, vector<ofPolyline>& curves)
 	return o->get(curves);
 }
 
-bool ofxAlembic::Reader::get(const string& path, vector<glm::vec3>& points)
+bool ofxAlembic::Reader::get(const string& path, vector<ofVec3f>& points)
 {
 	IGeom *o = get(path);
 	if (o == NULL) return false;

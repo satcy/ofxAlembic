@@ -221,7 +221,7 @@ class mutex : noncopyable
 public:
     mutex()
     {
-        m = CreateMutex( NULL, FALSE, NULL );
+        m = CreateMutexA( NULL, FALSE, NULL );
     }
 
     ~mutex()

@@ -1,7 +1,6 @@
 #pragma once
 
 #include <Alembic/AbcGeom/All.h>
-#include <Alembic/AbcCoreOgawa/All.h>
 
 #include "ofMain.h"
 
@@ -34,7 +33,7 @@ public:
 	Imath::M44f mat;
 	
 	XForm() {}
-	XForm(const glm::mat4& matrix);
+	XForm(const ofMatrix4x4& matrix);
 	
 	void draw();
 	
@@ -59,11 +58,11 @@ public:
 struct ofxAlembic::Point
 {
 	uint64_t id;
-	glm::vec3 pos;
+	ofVec3f pos;
 	
 	Point() : id(-1) {}
-	Point(const glm::vec3& pos) : id(-1), pos(pos) {}
-	Point(uint64_t id, const glm::vec3& pos) : id(id), pos(pos) {}
+	Point(const ofVec3f& pos) : id(-1), pos(pos) {}
+	Point(uint64_t id, const ofVec3f& pos) : id(id), pos(pos) {}
 	
 	Point(float x, float y, float z) : id(-1), pos(x, y, z) {}
 	Point(uint64_t id, float x, float y, float z) : id(id), pos(x, y, z) {}
@@ -75,7 +74,7 @@ public:
 	vector<Point> points;
 	
 	Points() {}
-	Points(const vector<glm::vec3>& points);
+	Points(const vector<ofVec3f>& points);
 	Points(const vector<Point>& points) : points(points) {}
 
 	void get(Alembic::AbcGeom::OPointsSchema &schema) const;
