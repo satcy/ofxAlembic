@@ -595,7 +595,9 @@ void Camera::updateParams(ofCamera &camera, ofMatrix4x4 xform)
 	camera.setGlobalPosition(xform.getTranslation());
 	camera.setGlobalOrientation(xform.getRotate());
 
-	// TODO: lens offset
+    auto voffset = -2.0 * sample.getVerticalFilmOffset() ;
+    auto hoffset = 20.0 * sample.getHorizontalFilmOffset();
+    camera.setLensOffset(glm::vec2(hoffset, voffset));
 }
 
 void Camera::draw()
