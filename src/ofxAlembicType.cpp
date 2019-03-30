@@ -168,8 +168,9 @@ void Points::draw()
 
 void PolyMesh::get(OPolyMeshSchema &schema) const
 {
-	vector<V3f> positions;
+	vector<C3f> positions;
 	vector<std::int32_t> indexes;
+	vector<std::uint32_t> uindexes;
 	vector<std::int32_t> counts;
 	vector<V2f> uvs;
 	vector<N3f> norms;
@@ -177,45 +178,54 @@ void PolyMesh::get(OPolyMeshSchema &schema) const
 	OV2fGeomParam::Sample uv_sample;
 	ON3fGeomParam::Sample norm_sample;
 
+	// reference
+	//
+	// https://github.com/johnnyquest/hAbcGeomExport/blob/232b7068d2b51057662856e01a10cf5f2db02290/src/GeoObject.cpp
+	//
+
 	if (mesh.getNumIndices())
 	{
 		const int num_samples = mesh.getNumIndices();
+		const int num_verts = mesh.getNumVertices();
 
 		const vector<ofIndexType>& idx = mesh.getIndices();
 
 		{
 			indexes.resize(num_samples);
-			for (int i = 0; i < num_samples; i++)
-				indexes[i] = i;
+			uindexes.resize(num_samples);
+			for (int i = 0; i < num_samples; i++) {
+				indexes[i] = mesh.getIndices()[i];
+				uindexes[i] = mesh.getIndices()[i];
+			}
 		}
 
 		{
 			const vector<ofVec3f>& verts = mesh.getVertices();
-			positions.resize(num_samples);
+			positions.resize(num_verts);
 
-			for (int i = 0; i < num_samples; i++)
-				positions[i] = toAbc(verts[idx[i]]);
+			for (int i = 0; i < num_verts; i++)
+				positions[i] = toAbc(verts[i]);
 		}
 
 		if (mesh.getNumTexCoords() == mesh.getNumVertices())
 		{
 			const vector<ofVec2f> &v = mesh.getTexCoords();
 
-			uvs.resize(num_samples);
-			for (int i = 0; i < num_samples; i++)
-				uvs[i] = toAbc(v[idx[i]]);
+			uvs.resize(num_verts);
+			for (int i = 0; i < num_verts; i++)
+				uvs[i] = toAbc(v[i]);
 		}
-		assert(uvs.size() == 0 || uvs.size() == num_samples);
+		assert(uvs.size() == 0 || uvs.size() == num_verts);
 
 		if (mesh.getNumNormals() == mesh.getNumVertices())
 		{
 			const vector<ofVec3f> &v = mesh.getNormals();
 
-			norms.resize(num_samples);
-			for (int i = 0; i < num_samples; i++)
-				norms[i] = toAbc(v[idx[i]].getNormalized() * -1);
+			norms.resize(num_verts);
+			for (int i = 0; i < num_verts; i++)
+				norms[i] = toAbc(v[i].getNormalized() * -1);
 		}
-		assert(norms.size() == 0 || norms.size() == num_samples);
+		assert(norms.size() == 0 || norms.size() == num_verts);
 	}
 	else
 	{
@@ -266,17 +276,29 @@ void PolyMesh::get(OPolyMeshSchema &schema) const
 
 	if (!uvs.empty())
 	{
-		uv_sample.setScope(kVertexScope);
+		if (mesh.getNumIndices()) {
+			uv_sample.setScope(kFacevaryingScope);
+			uv_sample.setIndices(UInt32ArraySample(uindexes));
+		}
+		else {
+			uv_sample.setScope(kVertexScope);
+		}
 		uv_sample.setVals(V2fArraySample(uvs));
 	}
 
 	if (!norms.empty())
 	{
-		norm_sample.setScope(kVertexScope);
+		if (mesh.getNumIndices()) {
+			norm_sample.setScope(kFacevaryingScope);
+			norm_sample.setIndices(UInt32ArraySample(uindexes));
+		}
+		else {
+			norm_sample.setScope(kVertexScope);
+		}
 		norm_sample.setVals(N3fArraySample(norms));
 	}
 
-	OPolyMeshSchema::Sample sample((P3fArraySample(positions)),
+	OPolyMeshSchema::Sample sample((C3fArraySample(positions)),
 								   Int32ArraySample(indexes),
 								   Int32ArraySample(counts),
 								   uv_sample,
