@@ -19,7 +19,7 @@ public:
 
 	~Writer() { close(); }
 
-    bool open(const string& path, float fps = 30, Alembic::AbcCoreFactory::IFactory::CoreType type = Alembic::AbcCoreFactory::IFactory::kHDF5);
+    bool open(const string& path, double fps = 30, Alembic::AbcCoreFactory::IFactory::CoreType type = Alembic::AbcCoreFactory::IFactory::kOgawa);
 	void close();
 
 	void addPoints(const string& path, const Points& points);
@@ -29,7 +29,7 @@ public:
 	void addCamera(const string& path, const Camera& camera);
 	void addCamera(const string& path, const ofCamera& camera);
 
-	void setTime(float time);
+	void setTime(double time);
 	float getTime() const { return current_time; }
 
 	void rewind();
@@ -41,8 +41,8 @@ protected:
 	map<string, Alembic::AbcGeom::OObject*> object_map;
 	Alembic::AbcGeom::OArchive archive;
 
-	float inv_fps;
-	float current_time;
+	double inv_fps;
+	double current_time;
 
 	template <typename T>
 	T& getObject(const string& path)

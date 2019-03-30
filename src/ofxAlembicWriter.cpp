@@ -3,7 +3,7 @@
 using namespace ofxAlembic;
 using namespace Alembic::AbcGeom;
 
-bool Writer::open(const string& path, float fps, Alembic::AbcCoreFactory::IFactory::CoreType type)
+bool Writer::open(const string& path, double fps, Alembic::AbcCoreFactory::IFactory::CoreType type)
 {
 	ofxAlembic::init();
     if ( type == Alembic::AbcCoreFactory::IFactory::kOgawa) {
@@ -100,7 +100,7 @@ void Writer::addCamera(const string& path, const ofCamera& ofcamera)
 
 // time
 
-void Writer::setTime(float time)
+void Writer::setTime(double time)
 {
 	current_time = time;
 }
