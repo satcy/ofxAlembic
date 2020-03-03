@@ -286,11 +286,11 @@ void PolyMesh::set(IPolyMeshSchema &schema, float time)
 	ISampleSelector ss(time, ISampleSelector::kNearIndex);
 	IPolyMeshSchema::Sample sample;
 	schema.get(sample, ss);
-
+    
 	P3fArraySamplePtr m_meshP = sample.getPositions();
 	Int32ArraySamplePtr m_meshIndices = sample.getFaceIndices();
 	Int32ArraySamplePtr m_meshCounts = sample.getFaceCounts();
-
+    
 	mesh.clear();
 
 	size_t numFaces = m_meshCounts->size();
@@ -461,6 +461,70 @@ void PolyMesh::set(IPolyMeshSchema &schema, float time)
 			}
 		}
 	}
+    { // Color (Custom Attribute)
+        const auto & geom_params = schema.getArbGeomParams();
+        int num = geom_params.getNumProperties();
+//        cout << num << endl;
+        for ( int i=0; i<num; i++ ) {
+            const auto & header = geom_params.getPropertyHeader(i);
+            auto datatype = header.getDataType();
+//            cout << header.getName() << endl;
+//            cout << header.getDataType() << endl;
+//            cout << header.isArray() << endl;
+            string name = header.getName();
+            if ( IC3fGeomParam::matches(header) ) {
+                IC3fGeomParam param(geom_params, name);
+                
+                //auto value = param.getIndexedValue(ss);
+                C3fArraySamplePtr ptr = param.getExpandedValue(ss).getVals();
+                const C3f* src = ptr->get();
+                const int32_t* indices = m_meshIndices->get();
+                auto & dst = mesh.getColors();
+                dst.resize(m_triangles.size() * 3);
+                
+                auto * dst_ptr = dst.data();
+                
+                for (int i = 0; i < m_triangles.size(); i++)
+                {
+                    Tri &t = m_triangles[i];
+                    
+                    const C3f& v0 = src[indices[t[0]]];
+                    memcpy(dst_ptr++, &v0.x, sizeof(float) * 3);
+                    
+                    const C3f& v1 = src[indices[t[1]]];
+                    memcpy(dst_ptr++, &v1.x, sizeof(float) * 3);
+                    
+                    const C3f& v2 = src[indices[t[2]]];
+                    memcpy(dst_ptr++, &v2.x, sizeof(float) * 3);
+                }
+            } else if ( IC4fGeomParam::matches(header) ) {
+                IC4fGeomParam param(geom_params, name);
+                
+                //auto value = param.getIndexedValue(ss);
+                C4fArraySamplePtr ptr = param.getExpandedValue(ss).getVals();
+                const C4f* src = ptr->get();
+                const int32_t* indices = m_meshIndices->get();
+                auto & dst = mesh.getColors();
+                dst.resize(m_triangles.size() * 3);
+                
+                auto * dst_ptr = dst.data();
+                
+                for (int i = 0; i < m_triangles.size(); i++)
+                {
+                    Tri &t = m_triangles[i];
+                    
+                    const C4f& v0 = src[indices[t[0]]];
+                    memcpy(dst_ptr++, &v0.r, sizeof(float) * 4);
+                    
+                    const C4f& v1 = src[indices[t[1]]];
+                    memcpy(dst_ptr++, &v1.r, sizeof(float) * 4);
+                    
+                    const C4f& v2 = src[indices[t[2]]];
+                    memcpy(dst_ptr++, &v2.r, sizeof(float) * 4);
+                }
+            }
+        }
+    }
 }
 
 void PolyMesh::draw()
