@@ -311,220 +311,262 @@ void PolyMesh::set(IPolyMeshSchema &schema, float time)
 
 	TriArray m_triangles;
 
-	size_t faceIndexBegin = 0;
-	size_t faceIndexEnd = 0;
-	for (size_t face = 0; face < numFaces; ++face)
-	{
-		faceIndexBegin = faceIndexEnd;
-		size_t count = (*m_meshCounts)[face];
-		faceIndexEnd = faceIndexBegin + count;
-
-		// Check this face is valid
-		if (faceIndexEnd > numIndices ||
-			faceIndexEnd < faceIndexBegin)
-		{
-			ofLogError("ofxAlembic") << "Mesh update quitting on face: "
-			<< face
-			<< " because of wonky numbers"
-			<< ", faceIndexBegin = " << faceIndexBegin
-			<< ", faceIndexEnd = " << faceIndexEnd
-			<< ", numIndices = " << numIndices
-			<< ", count = " << count;
-
-			// Just get out, make no more triangles.
-			break;
-		}
-
-		// Make triangles to fill this face.
-		if (count >= 3)
-		{
-			m_triangles.push_back(Tri((unsigned int)faceIndexBegin + 0,
-									  (unsigned int)faceIndexBegin + 1,
-									  (unsigned int)faceIndexBegin + 2));
-			for (size_t c = 3; c < count; ++c)
-			{
-				m_triangles.push_back(Tri((unsigned int)faceIndexBegin + 0,
-										  (unsigned int)faceIndexBegin + c - 1,
-										  (unsigned int)faceIndexBegin + c));
-			}
-		}
-	}
-
-	{
-		const V3f* points = m_meshP->get();
-		const int32_t* indices = m_meshIndices->get();
-		std::vector<glm::vec3>& dst = mesh.getVertices();
-		dst.resize(m_triangles.size() * 3);
-		
-		glm::vec3* dst_ptr = dst.data();
+    
+    
+    
+    if ( numIndices > 0 ) {
+        {
+            
+            const int32_t* indices = m_meshIndices->get();
+            auto & dst = mesh.getIndices();
+            dst.resize(numIndices);
+            
+            auto * dst_ptr = dst.data();
+            
+            
+            size_t faceIndexBegin = 0;
+            size_t faceIndexEnd = 0;
+            for (size_t face = 0; face < numFaces; ++face)
+            {
+                faceIndexBegin = faceIndexEnd;
+                size_t count = (*m_meshCounts)[face];
+                faceIndexEnd = faceIndexBegin + count;
+                
+                // Check this face is valid
+                if (faceIndexEnd > numIndices ||
+                    faceIndexEnd < faceIndexBegin)
+                {
+                    break;
+                }
+                
+                // Make triangles to fill this face.
+                if (count >= 3)
+                {
+                    const auto & v0 = indices[faceIndexBegin + 0];
+                    memcpy(dst_ptr++, &v0, sizeof(ofIndexType));
+                    
+                    const auto & v1 = indices[faceIndexBegin + 1];
+                    memcpy(dst_ptr++, &v1, sizeof(ofIndexType));
+                    
+                    const auto & v2 = indices[faceIndexBegin + 2];
+                    memcpy(dst_ptr++, &v2, sizeof(ofIndexType));
+                    
+                    for (size_t c = 3; c < count; ++c)
+                    {
+                        const auto & v0 = indices[faceIndexBegin + 0];
+                        memcpy(dst_ptr++, &v0, sizeof(ofIndexType));
+                        
+                        const auto & v1 = indices[faceIndexBegin + c - 1];
+                        memcpy(dst_ptr++, &v1, sizeof(ofIndexType));
+                        
+                        const auto & v2 = indices[faceIndexBegin + c];
+                        memcpy(dst_ptr++, &v2, sizeof(ofIndexType));
+                    }
+                }
+            }
+            
+//            for (int i = 0; i < numIndices; i++)
+//            {
+//
+//                const auto & v0 = indices[i];
+//                memcpy(dst_ptr++, &v0, sizeof(ofIndexType));
+//            }
+        }
+        {
+            const V3f* points = m_meshP->get();
+            std::vector<glm::vec3>& dst = mesh.getVertices();
+            dst.resize(numPoints);
+            
+            glm::vec3* dst_ptr = dst.data();
+            
+            for (int i = 0; i < dst.size(); i++)
+            {
+                const V3f& v0 = points[i];
+                memcpy(dst_ptr++, &v0.x, sizeof(float) * 3);
+            }
+        }
+        {
+            IN3fGeomParam N = schema.getNormalsParam();
+            if (N.valid())
+            {
+                if ( N.isIndexed() ) {
+                    N3fArraySamplePtr norm_ptr = N.getExpandedValue(ss).getVals();
+                    const N3f* src = norm_ptr->get();
+                    size_t numNormals = norm_ptr->size();
+                    std::vector<glm::vec3>& dst = mesh.getNormals();
+                    int num_verts = mesh.getNumVertices();
+                    auto & indices = mesh.getIndices();
+                    int num_indices = indices.size();
+                    dst.resize(numNormals);
+                    
+                    glm::vec3* dst_ptr = dst.data();
+                    
+                    for (int i = 0; i < numNormals; i++)
+                    {
+                        
+                        const N3f& n0 = src[i];
+                        //memcpy(dst_ptr++, &n0.x, sizeof(float) * 3);
+                        dst[indices[i]].x = n0.x;
+                        dst[indices[i]].y = n0.y;
+                        dst[indices[i]].z = n0.z;
+                    }
+                } else {
+                    N3fArraySamplePtr norm_ptr = N.getExpandedValue(ss).getVals();
+                    const N3f* src = norm_ptr->get();
+                    size_t numNormals = norm_ptr->size();
+                    std::vector<glm::vec3>& dst = mesh.getNormals();
+                    dst.resize(numNormals);
+                    
+                    glm::vec3* dst_ptr = dst.data();
+                    
+                    for (int i = 0; i < numNormals; i++)
+                    {
+                        
+                        const N3f& n0 = src[i];
+                        memcpy(dst_ptr++, &n0.x, sizeof(float) * 3);
+                    }
+                }
+                
+                
+            }
+        }
         
-		for (int i = 0; i < m_triangles.size(); i++)
-		{
-			Tri &t = m_triangles[i];
-			
-			const V3f& v0 = points[indices[t[0]]];
-			memcpy(dst_ptr++, &v0.x, sizeof(float) * 3);
-			
-			const V3f& v1 = points[indices[t[1]]];
-			memcpy(dst_ptr++, &v1.x, sizeof(float) * 3);
-			
-			const V3f& v2 = points[indices[t[2]]];
-			memcpy(dst_ptr++, &v2.x, sizeof(float) * 3);
-		}
-	}
-
-	{
-		IN3fGeomParam N = schema.getNormalsParam();
-		if (N.valid())
-		{
-			if (N.isIndexed())
-			{
-				ofLogError("ofxAlembic::PolyMesh") << "indexed normal is not supported";
-			}
-			else
-			{
-				N3fArraySamplePtr norm_ptr = N.getExpandedValue(ss).getVals();
-				const N3f* src = norm_ptr->get();
-				std::vector<glm::vec3>& dst = mesh.getNormals();
-				dst.resize(m_triangles.size() * 3);
-				
-				glm::vec3* dst_ptr = dst.data();
-
-				for (int i = 0; i < m_triangles.size(); i++)
-				{
-					Tri &t = m_triangles[i];
-					
-					const N3f& n0 = src[t[0]];
-					memcpy(dst_ptr++, &n0.x, sizeof(float) * 3);
-					
-					const N3f& n1 = src[t[1]];
-					memcpy(dst_ptr++, &n1.x, sizeof(float) * 3);
-					
-					const N3f& n2 = src[t[2]];
-					memcpy(dst_ptr++, &n2.x, sizeof(float) * 3);
-				}
-			}
-		}
-	}
-
-	{
-        IV2fGeomParam UV = schema.getUVsParam();
-		if (UV.valid())
-		{
-			if (UV.isIndexed())
-			{
-                auto value = UV.getIndexedValue(ss);
-                V2fArraySamplePtr uv_ptr = value.getVals();
-                const V2f* src = uv_ptr->get();
-                auto indices = value.getIndices()->get();
-				std::vector<glm::vec2>& dst = mesh.getTexCoords();
-                dst.resize(m_triangles.size() * 3);
-                
-                glm::vec2* dst_ptr = dst.data();
-                
-                for (int i = 0; i < m_triangles.size(); i++)
-                {
-                    Tri &t = m_triangles[i];
+        {
+            IV2fGeomParam UV = schema.getUVsParam();
+            if (UV.valid())
+            {
+                if ( UV.isIndexed() ) {
+                    auto value = UV.getExpandedValue(ss);
+                    V2fArraySamplePtr uv_ptr = value.getVals();
+                    const V2f* src = uv_ptr->get();
+                    size_t numUVs = uv_ptr->size();
+                    std::vector<glm::vec2>& dst = mesh.getTexCoords();
+                    int num_verts = mesh.getNumVertices();
+                    auto & indices = mesh.getIndices();
+                    int num_indices = indices.size();
+                    dst.resize(num_verts);
                     
-                    const V2f& t0 = src[indices[t[0]]];
-                    memcpy(dst_ptr++, &t0.x, sizeof(float) * 2);
+                    glm::vec2* dst_ptr = dst.data();
                     
-                    const V2f& t1 = src[indices[t[1]]];
-                    memcpy(dst_ptr++, &t1.x, sizeof(float) * 2);
+                    for (int i = 0; i < numUVs; i++)
+                    {
+                        const V2f& t0 = src[i];
+                        //memcpy(dst_ptr++, &t0.x, sizeof(float) * 2);
+                        dst[indices[i]].x = t0.x;
+                        dst[indices[i]].y = t0.y;
+                    }
+                } else {
+                    auto value = UV.getExpandedValue(ss);
+                    V2fArraySamplePtr uv_ptr = value.getVals();
+                    const V2f* src = uv_ptr->get();
+                    size_t numUVs = uv_ptr->size();
+                    std::vector<glm::vec2>& dst = mesh.getTexCoords();
+                    dst.resize(numUVs);
                     
-                    const V2f& t2 = src[indices[t[2]]];
-                    memcpy(dst_ptr++, &t2.x, sizeof(float) * 2);
-                }
-			}
-			else
-			{
-				V2fArraySamplePtr uv_ptr = UV.getExpandedValue(ss).getVals();
-				const V2f* src = uv_ptr->get();
-				std::vector<glm::vec2>& dst = mesh.getTexCoords();
-				dst.resize(m_triangles.size() * 3);
-				
-				glm::vec2* dst_ptr = dst.data();
-
-				for (int i = 0; i < m_triangles.size(); i++)
-				{
-					Tri &t = m_triangles[i];
-					
-					const V2f& t0 = src[t[0]];
-					memcpy(dst_ptr++, &t0.x, sizeof(float) * 2);
-					
-					const V2f& t1 = src[t[1]];
-					memcpy(dst_ptr++, &t1.x, sizeof(float) * 2);
-					
-					const V2f& t2 = src[t[2]];
-					memcpy(dst_ptr++, &t2.x, sizeof(float) * 2);
-				}
-			}
-		}
-	}
-    { // Color (Custom Attribute)
-        const auto & geom_params = schema.getArbGeomParams();
-        int num = geom_params.getNumProperties();
-//        cout << num << endl;
-        for ( int i=0; i<num; i++ ) {
-            const auto & header = geom_params.getPropertyHeader(i);
-            auto datatype = header.getDataType();
-//            cout << header.getName() << endl;
-//            cout << header.getDataType() << endl;
-//            cout << header.isArray() << endl;
-            string name = header.getName();
-            if ( IC3fGeomParam::matches(header) ) {
-                IC3fGeomParam param(geom_params, name);
-                
-                //auto value = param.getIndexedValue(ss);
-                C3fArraySamplePtr ptr = param.getExpandedValue(ss).getVals();
-                const C3f* src = ptr->get();
-                const int32_t* indices = m_meshIndices->get();
-                auto & dst = mesh.getColors();
-                dst.resize(m_triangles.size() * 3);
-                
-                auto * dst_ptr = dst.data();
-                
-                for (int i = 0; i < m_triangles.size(); i++)
-                {
-                    Tri &t = m_triangles[i];
+                    glm::vec2* dst_ptr = dst.data();
                     
-                    const C3f& v0 = src[indices[t[0]]];
-                    memcpy(dst_ptr++, &v0.x, sizeof(float) * 3);
-                    
-                    const C3f& v1 = src[indices[t[1]]];
-                    memcpy(dst_ptr++, &v1.x, sizeof(float) * 3);
-                    
-                    const C3f& v2 = src[indices[t[2]]];
-                    memcpy(dst_ptr++, &v2.x, sizeof(float) * 3);
-                }
-            } else if ( IC4fGeomParam::matches(header) ) {
-                IC4fGeomParam param(geom_params, name);
-                
-                //auto value = param.getIndexedValue(ss);
-                C4fArraySamplePtr ptr = param.getExpandedValue(ss).getVals();
-                const C4f* src = ptr->get();
-                const int32_t* indices = m_meshIndices->get();
-                auto & dst = mesh.getColors();
-                dst.resize(m_triangles.size() * 3);
-                
-                auto * dst_ptr = dst.data();
-                
-                for (int i = 0; i < m_triangles.size(); i++)
-                {
-                    Tri &t = m_triangles[i];
-                    
-                    const C4f& v0 = src[indices[t[0]]];
-                    memcpy(dst_ptr++, &v0.r, sizeof(float) * 4);
-                    
-                    const C4f& v1 = src[indices[t[1]]];
-                    memcpy(dst_ptr++, &v1.r, sizeof(float) * 4);
-                    
-                    const C4f& v2 = src[indices[t[2]]];
-                    memcpy(dst_ptr++, &v2.r, sizeof(float) * 4);
+                    for (int i = 0; i < numUVs; i++)
+                    {
+                        const V2f& t0 = src[i];
+                        memcpy(dst_ptr++, &t0.x, sizeof(float) * 2);
+                    }
                 }
             }
         }
+        { // Color (Custom Attribute)
+            const auto & geom_params = schema.getArbGeomParams();
+            int num = geom_params.getNumProperties();
+            //        cout << num << endl;
+            for ( int i=0; i<num; i++ ) {
+                const auto & header = geom_params.getPropertyHeader(i);
+                auto datatype = header.getDataType();
+//                cout << header.getName() << endl;
+//                cout << header.getDataType() << endl;
+//                cout << header.isArray() << endl;
+                string name = header.getName();
+                if ( IC3fGeomParam::matches(header) ) {
+                    IC3fGeomParam param(geom_params, name);
+                    
+                    //auto value = param.getIndexedValue(ss);
+                    if ( param.isIndexed() ) {
+                        C3fArraySamplePtr ptr = param.getExpandedValue(ss).getVals();
+                        const C3f* src = ptr->get();
+                        size_t numColors = ptr->size();
+                        auto & dst = mesh.getColors();
+                        int num_verts = mesh.getNumVertices();
+                        auto & indices = mesh.getIndices();
+                        int num_indices = indices.size();
+                        dst.resize(num_verts);
+                        
+                        auto * dst_ptr = dst.data();
+                        
+                        for (int i = 0; i < numColors; i++)
+                        {
+                            const C3f& v0 = src[i];
+                            //memcpy(dst_ptr++, &v0.x, sizeof(float) * 3);
+                            dst[indices[i]].set(v0.x, v0.y, v0.z);
+                        }
+                    } else {
+                        C3fArraySamplePtr ptr = param.getExpandedValue(ss).getVals();
+                        const C3f* src = ptr->get();
+                        size_t numColors = ptr->size();
+                        auto & dst = mesh.getColors();
+                        dst.resize(numColors);
+                        
+                        auto * dst_ptr = dst.data();
+                        
+                        for (int i = 0; i < numColors; i++)
+                        {
+                            const C3f& v0 = src[i];
+                            memcpy(dst_ptr++, &v0.x, sizeof(float) * 3);
+                        }
+                    }
+                    
+                } else if ( IC4fGeomParam::matches(header) ) {
+                    IC4fGeomParam param(geom_params, name);
+                    if ( param.isIndexed() ) {
+                        C4fArraySamplePtr ptr = param.getExpandedValue(ss).getVals();
+                        const C4f* src = ptr->get();
+                        size_t numColors = ptr->size();
+                        auto & dst = mesh.getColors();
+                        int num_verts = mesh.getNumVertices();
+                        auto & indices = mesh.getIndices();
+                        int num_indices = indices.size();
+                        dst.resize(num_verts);
+                        
+                        auto * dst_ptr = dst.data();
+                        
+                        for (int i = 0; i < numColors; i++)
+                        {
+                            
+                            const C4f& v0 = src[i];//src[indices[t[0]]];
+                            //memcpy(dst_ptr++, &v0.r, sizeof(float) * 4);
+                            dst[indices[i]].set(v0.r, v0.g, v0.b, v0.a);
+                        }
+                    } else {
+                        C4fArraySamplePtr ptr = param.getExpandedValue(ss).getVals();
+                        const C4f* src = ptr->get();
+                        size_t numColors = ptr->size();
+                        auto & dst = mesh.getColors();
+                        dst.resize(numColors);
+                        
+                        auto * dst_ptr = dst.data();
+                        
+                        for (int i = 0; i < numColors; i++)
+                        {
+                            
+                            const C4f& v0 = src[i];//src[indices[t[0]]];
+                            memcpy(dst_ptr++, &v0.r, sizeof(float) * 4);
+                        }
+                    }
+                    
+                    
+                }
+            }
+        }
+        return;
     }
+    
 }
 
 void PolyMesh::draw()
