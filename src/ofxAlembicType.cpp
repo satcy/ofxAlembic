@@ -475,92 +475,92 @@ void PolyMesh::set(IPolyMeshSchema &schema, float time)
         }
         { // Color (Custom Attribute)
             const auto & geom_params = schema.getArbGeomParams();
-            int num = geom_params.getNumProperties();
-            //        cout << num << endl;
-            for ( int i=0; i<num; i++ ) {
-                const auto & header = geom_params.getPropertyHeader(i);
-                auto datatype = header.getDataType();
-//                cout << header.getName() << endl;
-//                cout << header.getDataType() << endl;
-//                cout << header.isArray() << endl;
-                string name = header.getName();
-                if ( IC3fGeomParam::matches(header) ) {
-                    IC3fGeomParam param(geom_params, name);
-                    
-                    //auto value = param.getIndexedValue(ss);
-                    if ( param.isIndexed() ) {
-                        C3fArraySamplePtr ptr = param.getExpandedValue(ss).getVals();
-                        const C3f* src = ptr->get();
-                        size_t numColors = ptr->size();
-                        auto & dst = mesh.getColors();
-                        int num_verts = mesh.getNumVertices();
-                        auto & indices = mesh.getIndices();
-                        int num_indices = indices.size();
-                        dst.resize(num_verts);
+            if ( geom_params.valid() ) {
+                int num = geom_params.getNumProperties();
+                //        cout << num << endl;
+                for ( int i=0; i<num; i++ ) {
+                    const auto & header = geom_params.getPropertyHeader(i);
+                    auto datatype = header.getDataType();
+    //                cout << header.getName() << endl;
+    //                cout << header.getDataType() << endl;
+    //                cout << header.isArray() << endl;
+                    string name = header.getName();
+                    if ( IC3fGeomParam::matches(header) ) {
+                        IC3fGeomParam param(geom_params, name);
                         
-                        auto * dst_ptr = dst.data();
-                        
-                        for (int i = 0; i < numColors; i++)
-                        {
-                            const C3f& v0 = src[i];
-                            //memcpy(dst_ptr++, &v0.x, sizeof(float) * 3);
-                            dst[indices[i]].set(v0.x, v0.y, v0.z);
+                        //auto value = param.getIndexedValue(ss);
+                        if ( param.isIndexed() ) {
+                            C3fArraySamplePtr ptr = param.getExpandedValue(ss).getVals();
+                            const C3f* src = ptr->get();
+                            size_t numColors = ptr->size();
+                            auto & dst = mesh.getColors();
+                            int num_verts = mesh.getNumVertices();
+                            auto & indices = mesh.getIndices();
+                            int num_indices = indices.size();
+                            dst.resize(num_verts);
+                            
+                            auto * dst_ptr = dst.data();
+                            
+                            for (int i = 0; i < numColors; i++)
+                            {
+                                const C3f& v0 = src[i];
+                                //memcpy(dst_ptr++, &v0.x, sizeof(float) * 3);
+                                dst[indices[i]].set(v0.x, v0.y, v0.z);
+                            }
+                        } else {
+                            C3fArraySamplePtr ptr = param.getExpandedValue(ss).getVals();
+                            const C3f* src = ptr->get();
+                            size_t numColors = ptr->size();
+                            auto & dst = mesh.getColors();
+                            dst.resize(numColors);
+                            
+                            auto * dst_ptr = dst.data();
+                            
+                            for (int i = 0; i < numColors; i++)
+                            {
+                                const C3f& v0 = src[i];
+                                memcpy(dst_ptr++, &v0.x, sizeof(float) * 3);
+                            }
                         }
-                    } else {
-                        C3fArraySamplePtr ptr = param.getExpandedValue(ss).getVals();
-                        const C3f* src = ptr->get();
-                        size_t numColors = ptr->size();
-                        auto & dst = mesh.getColors();
-                        dst.resize(numColors);
                         
-                        auto * dst_ptr = dst.data();
-                        
-                        for (int i = 0; i < numColors; i++)
-                        {
-                            const C3f& v0 = src[i];
-                            memcpy(dst_ptr++, &v0.x, sizeof(float) * 3);
+                    } else if ( IC4fGeomParam::matches(header) ) {
+                        IC4fGeomParam param(geom_params, name);
+                        if ( param.isIndexed() ) {
+                            C4fArraySamplePtr ptr = param.getExpandedValue(ss).getVals();
+                            const C4f* src = ptr->get();
+                            size_t numColors = ptr->size();
+                            auto & dst = mesh.getColors();
+                            int num_verts = mesh.getNumVertices();
+                            auto & indices = mesh.getIndices();
+                            int num_indices = indices.size();
+                            dst.resize(num_verts);
+                            
+                            auto * dst_ptr = dst.data();
+                            
+                            for (int i = 0; i < numColors; i++)
+                            {
+                                
+                                const C4f& v0 = src[i];//src[indices[t[0]]];
+                                //memcpy(dst_ptr++, &v0.r, sizeof(float) * 4);
+                                dst[indices[i]].set(v0.r, v0.g, v0.b, v0.a);
+                            }
+                        } else {
+                            C4fArraySamplePtr ptr = param.getExpandedValue(ss).getVals();
+                            const C4f* src = ptr->get();
+                            size_t numColors = ptr->size();
+                            auto & dst = mesh.getColors();
+                            dst.resize(numColors);
+                            
+                            auto * dst_ptr = dst.data();
+                            
+                            for (int i = 0; i < numColors; i++)
+                            {
+                                
+                                const C4f& v0 = src[i];//src[indices[t[0]]];
+                                memcpy(dst_ptr++, &v0.r, sizeof(float) * 4);
+                            }
                         }
                     }
-                    
-                } else if ( IC4fGeomParam::matches(header) ) {
-                    IC4fGeomParam param(geom_params, name);
-                    if ( param.isIndexed() ) {
-                        C4fArraySamplePtr ptr = param.getExpandedValue(ss).getVals();
-                        const C4f* src = ptr->get();
-                        size_t numColors = ptr->size();
-                        auto & dst = mesh.getColors();
-                        int num_verts = mesh.getNumVertices();
-                        auto & indices = mesh.getIndices();
-                        int num_indices = indices.size();
-                        dst.resize(num_verts);
-                        
-                        auto * dst_ptr = dst.data();
-                        
-                        for (int i = 0; i < numColors; i++)
-                        {
-                            
-                            const C4f& v0 = src[i];//src[indices[t[0]]];
-                            //memcpy(dst_ptr++, &v0.r, sizeof(float) * 4);
-                            dst[indices[i]].set(v0.r, v0.g, v0.b, v0.a);
-                        }
-                    } else {
-                        C4fArraySamplePtr ptr = param.getExpandedValue(ss).getVals();
-                        const C4f* src = ptr->get();
-                        size_t numColors = ptr->size();
-                        auto & dst = mesh.getColors();
-                        dst.resize(numColors);
-                        
-                        auto * dst_ptr = dst.data();
-                        
-                        for (int i = 0; i < numColors; i++)
-                        {
-                            
-                            const C4f& v0 = src[i];//src[indices[t[0]]];
-                            memcpy(dst_ptr++, &v0.r, sizeof(float) * 4);
-                        }
-                    }
-                    
-                    
                 }
             }
         }
